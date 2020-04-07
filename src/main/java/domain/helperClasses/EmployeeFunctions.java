@@ -1,5 +1,5 @@
 package domain.helperClasses;
 
-public enum Function {
+public enum EmployeeFunctions {
     ORDINARY, MANAGER;
 }

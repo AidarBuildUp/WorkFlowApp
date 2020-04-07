@@ -1,10 +1,15 @@
-package domain.helperClasses;
+package domain;
 
 public class Address {
+
     private String postalCode;
+
     private String country;
+
     private String subject;
+
     private String city;
+
     private String street;
 
     public String getPostalCode() {
@@ -46,4 +51,5 @@ public class Address {
     public void setStreet(String street) {
         this.street = street;
     }
+
 }
