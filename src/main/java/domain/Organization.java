@@ -3,12 +3,13 @@ package domain;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+import java.util.UUID;
 
 @XmlRootElement
 public class Organization {
 
     @XmlTransient
-    private int id;
+    private UUID id;
 
     @XmlElement
     private String name;
@@ -25,11 +26,11 @@ public class Organization {
     public Organization() {
     }
 
-    public int getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
