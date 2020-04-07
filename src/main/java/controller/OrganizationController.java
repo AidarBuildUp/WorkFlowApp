@@ -52,8 +52,7 @@ public class OrganizationController extends HttpServlet {
             xmlMarshaller.doMarshall(resp, organization);
 
         } catch (JAXBException | IOException e) {
-            logger.error("error during marshalling");
-            logger.info(e.getStackTrace());
+            logger.error("error during marshalling", e);
         }
         return;
     }
@@ -79,7 +78,7 @@ public class OrganizationController extends HttpServlet {
             sendResponse(resp, organization);
 
         } catch (NullFieldException | ResponseMarshallingException e){
-            logger.error(e.getMessage());
+            logger.error(e);
             errorMessage(resp, e);
         }
 
@@ -102,7 +101,7 @@ public class OrganizationController extends HttpServlet {
             sendResponse(resp, organization);
 
         } catch (NullFieldException | ResponseMarshallingException e){
-            logger.error(e.getMessage());
+            logger.error(e);
             errorMessage(resp, e);
         }
 
@@ -112,6 +111,16 @@ public class OrganizationController extends HttpServlet {
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
 
+        try {
+            if (req.getParameter("id") != null) {
+                organizationDao.delete(UUID.fromString(req.getParameter("id")));
+
+            } else
+                throw new NullFieldException("Empty id field");
+
+        } catch (NullFieldException e) {
+            logger.error(e);
+        }
     }
 
     private final String [] inputParams = {"name", "physicalAddress", "legalAddress"}; //TODO add manager field
@@ -132,8 +141,7 @@ public class OrganizationController extends HttpServlet {
             xmlMarshaller.doMarshall(resp, organization);
 
         } catch (JAXBException | IOException e) {
-            logger.error("error during marshalling");
-            logger.info(e.getStackTrace());
+            logger.error("error during marshalling", e);
             throw new ResponseMarshallingException();
         }
     }
