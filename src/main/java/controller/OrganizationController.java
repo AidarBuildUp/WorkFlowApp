@@ -3,12 +3,13 @@ package controller;
 
 import dao.OrganizationDao;
 import domain.Organization;
-import exception.response.ResponseMarshallingException;
-import exception.validator.NullFieldException;
+import exception.validator.EmptyFieldException;
 import org.apache.log4j.Logger;
 import service.xmlmarshaller.XmlMarshaller;
 
 import javax.ejb.EJB;
+import javax.ejb.NoSuchEntityException;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -49,7 +50,7 @@ public class OrganizationController extends HttpServlet {
         Organization organization = organizationDao.get();
 
         try {
-            xmlMarshaller.doMarshall(resp, organization);
+            xmlMarshaller.sendMarshalledResponse(resp, organization);
 
         } catch (JAXBException | IOException e) {
             logger.error("error during marshalling", e);
@@ -63,46 +64,51 @@ public class OrganizationController extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
 
         try{
-            Organization organization = organizationDao.get();
-            String [] paramValues = checkInputParams(req);
+            Organization organizationFromDB = organizationDao.get();
+            Organization organizationFromRequest = new Organization();
+            organizationFromRequest = (Organization) xmlMarshaller.doUnmarshall(req, organizationFromRequest);
 
-            organization.setName(paramValues[0]);
-            organization.setPhysicalAddress(paramValues[1]);
-            organization.setLegalAddress(paramValues[2]);
-            if (req.getParameter("id") != null) {
-                organization.setId(UUID.fromString(req.getParameter("id")));
-            } else throw new NullFieldException("Empty id field");
+            checkInputParams(organizationFromRequest);
 
-            organizationDao.update(organization);
+            if (!organizationFromDB.getId().equals(organizationFromRequest.getId())) {
+                throw new NoSuchEntityException("No such organization in database");
+            }
 
-            sendResponse(resp, organization);
+            organizationDao.update(organizationFromRequest);
+            xmlMarshaller.sendMarshalledResponse(resp, organizationDao.get());
 
-        } catch (NullFieldException | ResponseMarshallingException e){
+        } catch (EmptyFieldException | NoSuchEntityException e){
             logger.error(e);
             errorMessage(resp, e);
+
+        } catch (JAXBException e) {
+            logger.error("Exception during unmarshalling request ", e);
         }
 
 
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         logger.info("put request caught");
         req.setCharacterEncoding("UTF-8");
 
         try{
-            String [] paramValues = checkInputParams(req);
-            Organization organization = new Organization();
-            organization.setName(paramValues[0]);
-            organization.setPhysicalAddress(paramValues[1]);
-            organization.setLegalAddress(paramValues[2]);
-            organization.setId (organizationDao.put(organization));
+            Organization organizationFromRequest = new Organization();
+            organizationFromRequest = (Organization) xmlMarshaller.doUnmarshall(req, organizationFromRequest);
 
-            sendResponse(resp, organization);
+            checkInputParams(organizationFromRequest);
 
-        } catch (NullFieldException | ResponseMarshallingException e){
+            organizationDao.put(organizationFromRequest);
+
+            xmlMarshaller.sendMarshalledResponse(resp, organizationDao.get());
+
+        } catch (EmptyFieldException e){
             logger.error(e);
             errorMessage(resp, e);
+
+        } catch (JAXBException e) {
+            logger.error("Exception during unmarshalling request ", e);
         }
 
     }
@@ -116,33 +122,17 @@ public class OrganizationController extends HttpServlet {
                 organizationDao.delete(UUID.fromString(req.getParameter("id")));
 
             } else
-                throw new NullFieldException("Empty id field");
+                throw new EmptyFieldException("Empty id field");
 
-        } catch (NullFieldException e) {
+        } catch (EmptyFieldException e) {
             logger.error(e);
         }
     }
 
-    private final String [] inputParams = {"name", "physicalAddress", "legalAddress"}; //TODO add manager field
-    private String[] checkInputParams (HttpServletRequest request) throws NullFieldException {
-        String [] notNullParamsValue = new String[inputParams.length];
-        for (int i = 0; i < inputParams.length; i++) {
-            if (request.getParameter(inputParams[i]) != null){
-                notNullParamsValue[i] = request.getParameter(inputParams[i]);
-            } else {
-                throw new NullFieldException("Null in not null requested field " + inputParams[i]);
-            }
-        }
-        return notNullParamsValue;
-    }
-
-    private void sendResponse(HttpServletResponse resp, Organization organization) throws ResponseMarshallingException {
-        try {
-            xmlMarshaller.doMarshall(resp, organization);
-
-        } catch (JAXBException | IOException e) {
-            logger.error("error during marshalling", e);
-            throw new ResponseMarshallingException();
+    private void checkInputParams (Organization organization) throws EmptyFieldException {
+        if ( (organization != null) && (organization.getName().isEmpty()) ||
+        (organization.getPhysicalAddress().isEmpty()) || (organization.getLegalAddress().isEmpty()) ) {
+            throw new EmptyFieldException("Empty fields in required fields");
         }
     }
 
@@ -153,7 +143,7 @@ public class OrganizationController extends HttpServlet {
             writer.println(e.getMessage());
 
         } catch (IOException ex) {
-            ex.printStackTrace();
+            logger.error(e);
         }
     }
 }

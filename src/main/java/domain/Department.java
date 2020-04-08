@@ -6,7 +6,7 @@ public class Department {
 
     private String name;
 
-    private Contacts contacts;
+    private String contacts;
 
     private Employee manager;
 
@@ -31,11 +31,11 @@ public class Department {
         this.name = name;
     }
 
-    public Contacts getContacts() {
+    public String getContacts() {
         return contacts;
     }
 
-    public void setContacts(Contacts contacts) {
+    public void setContacts(String contacts) {
         this.contacts = contacts;
     }
 
