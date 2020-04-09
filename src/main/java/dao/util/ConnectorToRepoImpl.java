@@ -4,11 +4,14 @@ import org.apache.log4j.Logger;
 import service.repository.utils.checkConnection.RepoConnectionChecker;
 
 import javax.ejb.EJB;
+import javax.ejb.Local;
 import javax.ejb.Stateless;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
 @Stateless
+@Local(ConnectorToRepo.class)
 public class ConnectorToRepoImpl implements ConnectorToRepo {
 
     @EJB
@@ -16,19 +19,13 @@ public class ConnectorToRepoImpl implements ConnectorToRepo {
 
     private static final Logger logger = Logger.getLogger(ConnectorToRepoImpl.class);
 
-    @Override
-    public Connection getConnection() {
-        return repoConnectionChecker.checkRepoAvailability();
-    }
+    private DataSource connectionPool;
 
     @Override
-    public void closeConnection(Connection connection) {
-        if (connection != null) {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                logger.error(e.getStackTrace());
-            }
+    public Connection getConnection() throws SQLException {
+        if (connectionPool == null) {
+            repoConnectionChecker.checkRepoAvailability();
         }
+        return connectionPool.getConnection();
     }
 }

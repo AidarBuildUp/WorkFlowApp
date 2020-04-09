@@ -1,7 +1,8 @@
-package dao;
+package dao.organization;
 
 import domain.Organization;
 
+import javax.ejb.Local;
 import java.util.UUID;
 
 public interface OrganizationDao {

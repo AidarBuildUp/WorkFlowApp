@@ -2,10 +2,15 @@ package domain;
 
 import domain.helperClasses.EmployeeFunctions;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import java.util.UUID;
 
+@XmlRootElement
 public class Employee {
 
-    private Long id;
+    private UUID id;
 
     private String firstName;
 
@@ -22,11 +27,11 @@ public class Employee {
     public Employee() {
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
-
-    public void setId(Long id) {
+    @XmlElement
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -34,6 +39,7 @@ public class Employee {
         return firstName;
     }
 
+    @XmlElement
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
@@ -42,6 +48,7 @@ public class Employee {
         return secondName;
     }
 
+    @XmlElement
     public void setSecondName(String secondName) {
         this.secondName = secondName;
     }
@@ -50,6 +57,7 @@ public class Employee {
         return patronymicName;
     }
 
+    @XmlElement
     public void setPatronymicName(String patronymicName) {
         this.patronymicName = patronymicName;
     }
@@ -58,6 +66,7 @@ public class Employee {
         return employeeFunctions;
     }
 
+    @XmlTransient
     public void setEmployeeFunctions(EmployeeFunctions employeeFunctions) {
         this.employeeFunctions = employeeFunctions;
     }
@@ -66,6 +75,7 @@ public class Employee {
         return department;
     }
 
+    @XmlTransient
     public void setDepartment(Department department) {
         this.department = department;
     }
@@ -74,6 +84,7 @@ public class Employee {
         return organization;
     }
 
+    @XmlElement
     public void setOrganization(Organization organization) {
         this.organization = organization;
     }

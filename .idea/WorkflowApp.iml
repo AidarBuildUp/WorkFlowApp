@@ -48,5 +48,6 @@
     <orderEntry type="library" name="Maven: log4j:log4j:1.2.17" level="project" />
     <orderEntry type="library" name="Maven: javax.ejb:javax.ejb-api:3.2" level="project" />
     <orderEntry type="library" name="Maven: javax.transaction:javax.transaction-api:1.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="GlassFish 5.0.1 - EJB" level="application_server_libraries" />
   </component>
 </module>

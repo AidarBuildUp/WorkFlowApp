@@ -10,6 +10,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import java.io.IOException;
+import java.util.Set;
 
 @Stateless
 public class XmlMarshallerImpl implements XmlMarshaller {
@@ -22,6 +23,13 @@ public class XmlMarshallerImpl implements XmlMarshaller {
 
         mar.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
         mar.marshal(entity,resp.getOutputStream());
+    }
+
+    @Override
+    public void sendMarshalledResponse(HttpServletResponse resp, Set<Object> entities) throws JAXBException, IOException {
+        for (Object entity: entities) {
+            sendMarshalledResponse(resp, entity);
+        }
     }
 
     @Override

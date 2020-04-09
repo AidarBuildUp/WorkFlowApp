@@ -1,15 +1,17 @@
-package dao;
+package dao.organization;
 
 import dao.util.ConnectorToRepo;
 import domain.Organization;
 import org.apache.log4j.Logger;
 
 import javax.ejb.EJB;
+import javax.ejb.Local;
 import javax.ejb.Stateless;
 import java.sql.*;
 import java.util.UUID;
 
 @Stateless
+@Local(OrganizationDao.class)
 public class OrganizationDaoImpl implements OrganizationDao {
 
     private static final Logger logger = Logger.getLogger(OrganizationDaoImpl.class);
@@ -32,20 +34,30 @@ public class OrganizationDaoImpl implements OrganizationDao {
     @Override
     public Organization get() {
         logger.info("start");
-
-        Connection connection = connectorToRepo.getConnection();
         Organization organization = new Organization();
-        ResultSet resultSet = null;
+        logger.info("Organization fullfilling started >>");
 
-        try (Statement statement = connection.createStatement()){
+        try (Connection connection = connectorToRepo.getConnection();
+             Statement statement = connection.createStatement()){
 
-            resultSet = statement.executeQuery(GET_QUERY);
+            ResultSet resultSet = statement.executeQuery(GET_QUERY);
 
             resultSet.next();
             organization.setId( UUID.fromString(resultSet.getString(COLUMN_NAMES[0])) );
+
+            logger.info("   >> Organization " + COLUMN_NAMES[0] + " >" + resultSet.getString(COLUMN_NAMES[0]) );
+
             organization.setName(resultSet.getString(COLUMN_NAMES[1]));
+
+            logger.info("   >> Organization " + COLUMN_NAMES[1] + " >" + resultSet.getString(COLUMN_NAMES[1]) );
+
             organization.setPhysicalAddress(resultSet.getString(COLUMN_NAMES[2]));
+
+            logger.info("   >> Organization " + COLUMN_NAMES[2] + " >" + resultSet.getString(COLUMN_NAMES[2]) );
+
             organization.setLegalAddress(resultSet.getString(COLUMN_NAMES[3]));
+
+            logger.info("   >> Organization " + COLUMN_NAMES[3] + " >" + resultSet.getString(COLUMN_NAMES[3]) );
 
             return organization;
 
@@ -55,24 +67,15 @@ public class OrganizationDaoImpl implements OrganizationDao {
             logger.error(e.getStackTrace());
 
             return null;
-
-        } finally {
-            try {
-                if (resultSet != null) resultSet.close();
-                connectorToRepo.closeConnection(connection);
-
-            } catch (SQLException e) {
-                logger.error(e);
-            }
         }
     }
 
     @Override
     public UUID put(Organization organization) {
         logger.info("start");
-        Connection connection = connectorToRepo.getConnection();
 
-        try (PreparedStatement preparedStatement = connection.prepareStatement(PUT_QUERY)){
+        try (Connection connection = connectorToRepo.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(PUT_QUERY)){
 
             UUID id = UUID.randomUUID();
 
@@ -87,9 +90,6 @@ public class OrganizationDaoImpl implements OrganizationDao {
         } catch (SQLException e) {
             logger.error("error during saving organization entity", e);
             return null;
-
-        } finally {
-            connectorToRepo.closeConnection(connection);
         }
     }
 
@@ -97,9 +97,9 @@ public class OrganizationDaoImpl implements OrganizationDao {
     public boolean update(Organization organization) {
         logger.info("start");
 
-        Connection connection = connectorToRepo.getConnection();
+        try (Connection connection = connectorToRepo.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(POST_QUERY)){
 
-        try (PreparedStatement preparedStatement = connection.prepareStatement(POST_QUERY)){
             preparedStatement.setString(1, organization.getName());
             preparedStatement.setString(2, organization.getPhysicalAddress());
             preparedStatement.setString(3, organization.getLegalAddress());
@@ -110,8 +110,6 @@ public class OrganizationDaoImpl implements OrganizationDao {
         } catch (SQLException e) {
             logger.error("error during saving organization entity", e);
             return false;
-        } finally {
-            connectorToRepo.closeConnection(connection);
         }
     }
 
@@ -119,8 +117,9 @@ public class OrganizationDaoImpl implements OrganizationDao {
     public boolean delete(UUID id) {
         logger.info("start");
 
-        Connection connection = connectorToRepo.getConnection();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_QUERY)){
+        try (Connection connection = connectorToRepo.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(DELETE_QUERY)){
+
             preparedStatement.setObject(1, id, Types.OTHER);
             preparedStatement.execute();
             return true;
@@ -129,9 +128,6 @@ public class OrganizationDaoImpl implements OrganizationDao {
             logger.error("error deleting entity", e);
             logger.error(e.getStackTrace());
             return false;
-
-        } finally {
-            connectorToRepo.closeConnection(connection);
         }
     }
 

@@ -1,15 +1,15 @@
 package controller;
 
 
-import dao.OrganizationDao;
+import dao.organization.OrganizationDao;
 import domain.Organization;
+import exception.DublicateOrganizationException;
 import exception.validator.EmptyFieldException;
 import org.apache.log4j.Logger;
 import service.xmlmarshaller.XmlMarshaller;
 
 import javax.ejb.EJB;
 import javax.ejb.NoSuchEntityException;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -55,11 +55,10 @@ public class OrganizationController extends HttpServlet {
         } catch (JAXBException | IOException e) {
             logger.error("error during marshalling", e);
         }
-        return;
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         logger.info("post request caught");
         req.setCharacterEncoding("UTF-8");
 
@@ -69,10 +68,7 @@ public class OrganizationController extends HttpServlet {
             organizationFromRequest = (Organization) xmlMarshaller.doUnmarshall(req, organizationFromRequest);
 
             checkInputParams(organizationFromRequest);
-
-            if (!organizationFromDB.getId().equals(organizationFromRequest.getId())) {
-                throw new NoSuchEntityException("No such organization in database");
-            }
+            organizationFromRequest.setId(organizationFromDB.getId());
 
             organizationDao.update(organizationFromRequest);
             xmlMarshaller.sendMarshalledResponse(resp, organizationDao.get());
@@ -84,16 +80,17 @@ public class OrganizationController extends HttpServlet {
         } catch (JAXBException e) {
             logger.error("Exception during unmarshalling request ", e);
         }
-
-
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         logger.info("put request caught");
         req.setCharacterEncoding("UTF-8");
 
         try{
+            if (organizationDao.get() != null) {
+                throw new DublicateOrganizationException("not allowed to add dublicate organization");
+            }
             Organization organizationFromRequest = new Organization();
             organizationFromRequest = (Organization) xmlMarshaller.doUnmarshall(req, organizationFromRequest);
 
@@ -103,18 +100,18 @@ public class OrganizationController extends HttpServlet {
 
             xmlMarshaller.sendMarshalledResponse(resp, organizationDao.get());
 
-        } catch (EmptyFieldException e){
+        } catch (EmptyFieldException | DublicateOrganizationException e){
             logger.error(e);
+
             errorMessage(resp, e);
 
         } catch (JAXBException e) {
             logger.error("Exception during unmarshalling request ", e);
         }
-
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         req.setCharacterEncoding("UTF-8");
 
         try {
@@ -137,9 +134,8 @@ public class OrganizationController extends HttpServlet {
     }
 
     private void errorMessage(HttpServletResponse resp, Exception e) {
-        PrintWriter writer = null;
         try {
-            writer = resp.getWriter();
+            PrintWriter writer = resp.getWriter();
             writer.println(e.getMessage());
 
         } catch (IOException ex) {

@@ -1,7 +1,7 @@
 package service.repository.utils.checkConnection;
 
-import java.sql.Connection;
+import javax.sql.DataSource;
 
 public interface RepoConnectionChecker {
-    Connection checkRepoAvailability ();
+    DataSource checkRepoAvailability ();
 }

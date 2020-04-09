@@ -21,7 +21,7 @@ public class RepoInitializerIml implements RepoInitializer {
         logger.info("start");
         RepoConnectionChecker connectionChecker = new RepoConnectionCheckerImpl();
 
-        try (Connection connection = connectionChecker.checkRepoAvailability();){
+        try (Connection connection = connectionChecker.checkRepoAvailability().getConnection();){
             if (connection != null) { //connection available
                 RepoInitProperty initProperty = new RepoInitPropertyImpl();
 
