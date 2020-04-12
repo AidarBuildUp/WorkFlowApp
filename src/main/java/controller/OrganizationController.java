@@ -1,24 +1,25 @@
 package controller;
 
 
-import dao.organization.OrganizationDao;
+import dao.Dao;
+import dao.OrganizationDaoBean;
+import domain.BaseEntity;
 import domain.Organization;
-import exception.DublicateOrganizationException;
+import exception.database.NoSuchEntityException;
+import exception.response.ResponseMarshallingException;
 import exception.validator.EmptyFieldException;
 import org.apache.log4j.Logger;
 import service.xmlmarshaller.XmlMarshaller;
 
 import javax.ejb.EJB;
-import javax.ejb.NoSuchEntityException;
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 import java.util.UUID;
 
 @WebServlet(urlPatterns = "/organization", loadOnStartup = 1)
@@ -26,34 +27,56 @@ public class OrganizationController extends HttpServlet {
 
     private static final Logger logger = Logger.getLogger(OrganizationController.class);
 
-    @EJB
-    OrganizationDao organizationDao;
+    @EJB (beanName = "OrganizationDaoBean")
+    Dao organizationDao;
 
     @EJB
     XmlMarshaller xmlMarshaller;
 
-//    @Override
-//    public void init() throws ServletException {
-//
-//        logger.info("init method in OrganizationController started");
-//        RepoInitializer repoInitializer = new RepoInitializerIml();
-//        if (!repoInitializer.initialize()) {
-//            throw new ServletException("Error during repository initialize. Servlet loading breaked");
-//        }
-//    }
-
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, UnsupportedEncodingException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws UnsupportedEncodingException {
+
         logger.info("get request caught");
         req.setCharacterEncoding("UTF-8");
 
-        Organization organization = organizationDao.get();
-
         try {
-            xmlMarshaller.sendMarshalledResponse(resp, organization);
+            if (req.getParameter("id") != null) {
+                logger.info("Request has an id parameter" + req.getParameter("id"));
 
+                getById(req, resp, UUID.fromString(req.getParameter("id")));
+            } else {
+                logger.info("Request doesn't have id parameter");
+
+                getAll(req, resp);
+            }
         } catch (JAXBException | IOException e) {
             logger.error("error during marshalling", e);
+        }
+    }
+
+    void getById (HttpServletRequest req, HttpServletResponse resp, UUID id) throws JAXBException, IOException {
+
+        try {
+
+            Object employee = organizationDao.getById(new Organization().getClass(), id);
+            xmlMarshaller.sendMarshalledResponse(resp, employee);
+
+        } catch (ResponseMarshallingException | exception.database.NoSuchEntityException e) {
+            logger.error(e);
+        }
+    }
+
+    void getAll (HttpServletRequest req, HttpServletResponse resp) throws JAXBException, IOException {
+
+        try {
+            List<BaseEntity> organizations = organizationDao.getAll(new Organization().getClass());
+
+            if (organizations.isEmpty()) return;
+
+            xmlMarshaller.sendMarshalledResponse(resp, organizations, new Organization().getClass());
+
+        } catch (ResponseMarshallingException e) {
+            logger.error(e);
         }
     }
 
@@ -63,23 +86,22 @@ public class OrganizationController extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
 
         try{
-            Organization organizationFromDB = organizationDao.get();
             Organization organizationFromRequest = new Organization();
             organizationFromRequest = (Organization) xmlMarshaller.doUnmarshall(req, organizationFromRequest);
 
-            checkInputParams(organizationFromRequest);
-            organizationFromRequest.setId(organizationFromDB.getId());
+            organizationDao.checkInputParams(organizationFromRequest);
 
-            organizationDao.update(organizationFromRequest);
-            xmlMarshaller.sendMarshalledResponse(resp, organizationDao.get());
+            UUID id = organizationDao.put(new Organization().getClass(), organizationFromRequest);
 
-        } catch (EmptyFieldException | NoSuchEntityException e){
+            xmlMarshaller.sendMarshalledResponse(resp, organizationDao.getById(new Organization().getClass(), id));
+
+        } catch (EmptyFieldException | exception.database.NoSuchEntityException e){
             logger.error(e);
-            errorMessage(resp, e);
 
-        } catch (JAXBException e) {
+        } catch (JAXBException | ResponseMarshallingException e) {
             logger.error("Exception during unmarshalling request ", e);
         }
+
     }
 
     @Override
@@ -88,24 +110,22 @@ public class OrganizationController extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
 
         try{
-            if (organizationDao.get() != null) {
-                throw new DublicateOrganizationException("not allowed to add dublicate organization");
-            }
             Organization organizationFromRequest = new Organization();
             organizationFromRequest = (Organization) xmlMarshaller.doUnmarshall(req, organizationFromRequest);
 
-            checkInputParams(organizationFromRequest);
+            organizationDao.checkInputParams(organizationFromRequest);
 
-            organizationDao.put(organizationFromRequest);
+            BaseEntity employeeFromDB = organizationDao.getById(new Organization().getClass(), organizationFromRequest.getId());
 
-            xmlMarshaller.sendMarshalledResponse(resp, organizationDao.get());
+            if (employeeFromDB == null) throw new NoSuchEntityException("No entity by such id");
 
-        } catch (EmptyFieldException | DublicateOrganizationException e){
+            organizationDao.update(new Organization().getClass(), organizationFromRequest);
+            xmlMarshaller.sendMarshalledResponse(resp, organizationDao.getById(new Organization().getClass(), organizationFromRequest.getId()));
+
+        } catch (EmptyFieldException | NoSuchEntityException e){
             logger.error(e);
 
-            errorMessage(resp, e);
-
-        } catch (JAXBException e) {
+        } catch (JAXBException | ResponseMarshallingException e) {
             logger.error("Exception during unmarshalling request ", e);
         }
     }
@@ -116,29 +136,12 @@ public class OrganizationController extends HttpServlet {
 
         try {
             if (req.getParameter("id") != null) {
-                organizationDao.delete(UUID.fromString(req.getParameter("id")));
+                organizationDao.delete(new Organization().getClass(), UUID.fromString(req.getParameter("id")));
 
             } else
                 throw new EmptyFieldException("Empty id field");
 
         } catch (EmptyFieldException e) {
-            logger.error(e);
-        }
-    }
-
-    private void checkInputParams (Organization organization) throws EmptyFieldException {
-        if ( (organization != null) && (organization.getName().isEmpty()) ||
-        (organization.getPhysicalAddress().isEmpty()) || (organization.getLegalAddress().isEmpty()) ) {
-            throw new EmptyFieldException("Empty fields in required fields");
-        }
-    }
-
-    private void errorMessage(HttpServletResponse resp, Exception e) {
-        try {
-            PrintWriter writer = resp.getWriter();
-            writer.println(e.getMessage());
-
-        } catch (IOException ex) {
             logger.error(e);
         }
     }

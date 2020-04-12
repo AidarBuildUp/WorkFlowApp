@@ -1,21 +1,25 @@
 package domain;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.*;
 import java.util.UUID;
 
 @XmlRootElement()
-public class Organization {
+@XmlAccessorType(XmlAccessType.FIELD)
+public class Organization extends BaseEntity {
 
+    @XmlElement
     private UUID id;
 
+    @XmlElement
     private String name;
 
+    @XmlElement
     private String physicalAddress;
 
+    @XmlElement
     private String legalAddress;
 
+    @XmlElement
     private Employee manager;
 
     public Organization() {
@@ -24,7 +28,7 @@ public class Organization {
     public UUID getId() {
         return id;
     }
-    @XmlElement
+
     public void setId(UUID id) {
         this.id = id;
     }
@@ -33,7 +37,6 @@ public class Organization {
         return name;
     }
 
-    @XmlElement
     public void setName(String name) {
         this.name = name;
     }
@@ -42,7 +45,6 @@ public class Organization {
         return physicalAddress;
     }
 
-    @XmlElement
     public void setPhysicalAddress(String physicalAddress) {
         this.physicalAddress = physicalAddress;
     }
@@ -51,7 +53,6 @@ public class Organization {
         return legalAddress;
     }
 
-    @XmlElement
     public void setLegalAddress(String legalAddress) {
         this.legalAddress = legalAddress;
     }
@@ -60,7 +61,6 @@ public class Organization {
         return manager;
     }
 
-    @XmlElement
     public void setManager(Employee manager) {
         this.manager = manager;
     }

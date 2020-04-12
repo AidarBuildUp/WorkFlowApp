@@ -1,25 +1,32 @@
 package domain;
 
-public class Department {
+import javax.xml.bind.annotation.*;
+import java.util.UUID;
 
-    private Long id;
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
+public class Department extends BaseEntity {
 
+    @XmlElement
+    private UUID id;
+
+    @XmlElement
     private String name;
 
+    @XmlElement
     private String contacts;
 
+    @XmlElement
     private Employee manager;
-
-    private Organization organization;
 
     public Department() {
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -45,13 +52,5 @@ public class Department {
 
     public void setManager(Employee manager) {
         this.manager = manager;
-    }
-
-    public Organization getOrganization() {
-        return organization;
-    }
-
-    public void setOrganization(Organization organization) {
-        this.organization = organization;
     }
 }
