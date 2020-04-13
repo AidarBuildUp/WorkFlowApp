@@ -84,17 +84,6 @@ public class OrganizationDaoBean extends DaoBean implements Dao {
         preparedStatement.setObject(5, organization.getId(), Types.OTHER);
     }
 
-    @Override
-    public void checkInputParams(BaseEntity entity) throws EmptyFieldException {
-        Organization organization = (Organization) entity;
-
-            if ( (organization != null) && (organization.getName().isEmpty()) ||
-                    (organization.getPhysicalAddress().isEmpty()) || (organization.getLegalAddress().isEmpty())
-                    || (organization.getManager() == null) ) {
-                throw new EmptyFieldException("Empty fields in required fields");
-            }
-    }
-
     private void checkManagerId (UUID managerId) throws NoManagerForOrganization {
         try {
             getById(new Employee(), managerId);

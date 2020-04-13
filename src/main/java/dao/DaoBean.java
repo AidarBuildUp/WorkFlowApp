@@ -6,6 +6,8 @@ import dao.util.DbConnector;
 import domain.BaseEntity;
 import exception.database.NoSuchEntityException;
 import org.apache.log4j.Logger;
+import service.sql.PrepareStatementFactory;
+import service.sql.ViewSettingsBean;
 
 import javax.ejb.EJB;
 import java.sql.*;
@@ -25,8 +27,11 @@ public abstract class DaoBean implements Dao {
     @EJB (beanName = "SqlRequestUtil")
     SqlRequestUtil sqlRequestUtil;
 
+    @EJB (beanName = "PrepareStatementFactoryBean")
+    PrepareStatementFactory prepareStatementFactory;
+
     @Override
-    public List<BaseEntity> getAll(BaseEntity entity){
+    public List<BaseEntity> getAll(BaseEntity entity, ViewSettingsBean viewSettings){
         logger.info("start");
 
         List<BaseEntity> entityList = new ArrayList<>();
@@ -34,7 +39,11 @@ public abstract class DaoBean implements Dao {
         try (Connection connection = dbConnector.getConnection();
              Statement statement = connection.createStatement()){
 
-            ResultSet resultSet = statement.executeQuery(sqlRequestUtil.getSqlRequest(entity.getClass(), SqlRequestType.GET_ALL_QUERY));
+            String sqlRequest = sqlRequestUtil.getSqlRequest(entity.getClass(), SqlRequestType.GET_ALL_QUERY);
+
+            String preparedSqlRequest = prepareStatementFactory.prepareStatement(sqlRequest, viewSettings);
+
+            ResultSet resultSet = statement.executeQuery(preparedSqlRequest);
 
             while (resultSet.next()) {
 

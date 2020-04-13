@@ -1,9 +1,11 @@
 package controller;
 
+import domain.BaseEntity;
 import exception.database.NoSuchEntityException;
 import exception.response.ResponseMarshallingException;
 import exception.validator.EmptyFieldException;
 import org.apache.log4j.Logger;
+import service.sql.ViewSettingsBean;
 import service.xmlmarshaller.XmlMarshaller;
 
 import javax.ejb.EJB;
@@ -21,6 +23,9 @@ public abstract class AbstractController extends HttpServlet {
     @EJB
     XmlMarshaller xmlMarshaller;
 
+    @EJB
+    ViewSettingsBean viewSettings;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws UnsupportedEncodingException {
 
@@ -35,10 +40,37 @@ public abstract class AbstractController extends HttpServlet {
             } else {
                 logger.info("Request doesn't have id parameter");
 
-                getAll(req, resp);
+                fillViewSettings(req);
+                getAll(req, resp, viewSettings);
             }
         } catch (JAXBException | IOException e) {
             logger.error("error during marshalling", e);
+        }
+    }
+
+    private void fillViewSettings(HttpServletRequest req) {
+        if ( ( req.getParameter("searchAtr")!= null) && (req.getParameter("searchValue") != null ) ){
+
+            viewSettings.getSearch().setSearchAtr(req.getParameter("searchAtr"));
+
+            viewSettings.getSearch().setSearchAtr(req.getParameter("searchValue"));
+        }
+
+        if (req.getParameter("sortAtr")!= null) {
+
+            viewSettings.getSort().setSortAtr("sortAtr");
+
+            if (req.getParameter("sortDecs") != null) {
+
+                viewSettings.getSort().setSortDecs(true);
+            }
+        }
+
+        if ( ( req.getParameter("limit")!= null) && (req.getParameter("offset") != null ) ){
+
+            viewSettings.getPagination().setLimit(Integer.parseInt(req.getParameter("limit")));
+
+            viewSettings.getPagination().setOffset(Integer.parseInt(req.getParameter("offset")));
         }
     }
 
@@ -98,11 +130,13 @@ public abstract class AbstractController extends HttpServlet {
 
     abstract void getById (HttpServletRequest req, HttpServletResponse resp, UUID id) throws JAXBException, IOException;
 
-    abstract void getAll (HttpServletRequest req, HttpServletResponse resp) throws JAXBException, IOException;
+    abstract void getAll (HttpServletRequest req, HttpServletResponse resp, ViewSettingsBean viewSettings) throws JAXBException, IOException;
 
     abstract void put(HttpServletRequest req, HttpServletResponse resp) throws IOException, JAXBException, NoSuchEntityException, ResponseMarshallingException, EmptyFieldException;
 
     abstract void post(HttpServletRequest req, HttpServletResponse resp) throws IOException, JAXBException, EmptyFieldException, NoSuchEntityException, ResponseMarshallingException;
 
     abstract boolean delete (HttpServletRequest req);
+
+    abstract void checkInputParams(BaseEntity entity) throws EmptyFieldException;
 }

@@ -59,7 +59,7 @@ public class EmployeeController extends AbstractController{
 
         employeeFromRequest = (Employee) xmlMarshaller.getMarshalledRequest(req, employeeFromRequest);
 
-        employeeDao.checkInputParams(employeeFromRequest);
+        checkInputParams(employeeFromRequest);
 
         UUID id = employeeDao.put(employeeFromRequest);
 
@@ -73,7 +73,7 @@ public class EmployeeController extends AbstractController{
 
         employeeFromRequest = (Employee) xmlMarshaller.getMarshalledRequest(req, employeeFromRequest);
 
-        employeeDao.checkInputParams(employeeFromRequest);
+        checkInputParams(employeeFromRequest);
 
         BaseEntity employeeFromDB = employeeDao.getById(new Employee(), employeeFromRequest.getId());
 
@@ -89,5 +89,16 @@ public class EmployeeController extends AbstractController{
 
         return employeeDao.delete(new Employee(), UUID.fromString(req.getParameter("id")));
 
+    }
+
+    @Override
+    public void checkInputParams(BaseEntity entity) throws EmptyFieldException {
+        Employee employee = (Employee) entity;
+
+        if ( (employee != null) && (employee.getFirstName().isEmpty()) ||
+                (employee.getSecondName().isEmpty()) || (employee.getPatronymicName().isEmpty()) ||
+                (employee.getFunction().isEmpty())) {
+            throw new EmptyFieldException("Empty fields in required fields");
+        }
     }
 }

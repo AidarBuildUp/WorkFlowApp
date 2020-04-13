@@ -2,7 +2,6 @@ package dao;
 
 import domain.BaseEntity;
 import domain.Employee;
-import exception.validator.EmptyFieldException;
 
 import javax.ejb.Stateless;
 import java.sql.PreparedStatement;
@@ -71,14 +70,4 @@ public class EmployeeDaoBean extends DaoBean implements Dao{
         logger.info("<< successed");
     }
 
-    @Override
-    public void checkInputParams(BaseEntity entity) throws EmptyFieldException {
-        Employee employee = (Employee) entity;
-
-            if ( (employee != null) && (employee.getFirstName().isEmpty()) ||
-                    (employee.getSecondName().isEmpty()) || (employee.getPatronymicName().isEmpty()) ||
-                    (employee.getFunction().isEmpty())) {
-                throw new EmptyFieldException("Empty fields in required fields");
-            }
-    }
 }

@@ -2,7 +2,7 @@ package dao;
 
 import domain.BaseEntity;
 import exception.database.NoSuchEntityException;
-import exception.validator.EmptyFieldException;
+import service.sql.ViewSettingsBean;
 
 import javax.ejb.Local;
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Local
 public interface Dao {
-        List<BaseEntity> getAll(BaseEntity entity);
+        List<BaseEntity> getAll(BaseEntity entity, ViewSettingsBean viewSettings);
 
         BaseEntity getById(BaseEntity entity, UUID id) throws NoSuchEntityException;
 
@@ -19,6 +19,4 @@ public interface Dao {
         void update(BaseEntity entity);
 
         boolean delete(BaseEntity entity, UUID id);
-
-         void checkInputParams (BaseEntity entity) throws EmptyFieldException;
 }

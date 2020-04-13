@@ -39,7 +39,7 @@ public class OrganizationController extends AbstractController {
     protected void getAll (HttpServletRequest req, HttpServletResponse resp) throws JAXBException, IOException {
 
         try {
-            List<BaseEntity> organizations = organizationDao.getAll(new Organization());
+            List<BaseEntity> organizations = organizationDao.getAll(new Organization(), viewSettings);
 
             if (organizations.isEmpty()) return;
 
@@ -57,7 +57,7 @@ public class OrganizationController extends AbstractController {
         Organization organizationFromRequest = new Organization();
         organizationFromRequest = (Organization) xmlMarshaller.getMarshalledRequest(req, organizationFromRequest);
 
-        organizationDao.checkInputParams(organizationFromRequest);
+        checkInputParams(organizationFromRequest);
 
         BaseEntity organizationFromDB = organizationDao.getById(new Organization(), organizationFromRequest.getId());
 
@@ -74,9 +74,10 @@ public class OrganizationController extends AbstractController {
             throws IOException, JAXBException, EmptyFieldException, NoSuchEntityException, ResponseMarshallingException{
 
         Organization organizationFromRequest = new Organization();
+
         organizationFromRequest = (Organization) xmlMarshaller.getMarshalledRequest(req, organizationFromRequest);
 
-        organizationDao.checkInputParams(organizationFromRequest);
+        checkInputParams(organizationFromRequest);
 
         UUID id = organizationDao.put(organizationFromRequest);
 
@@ -88,5 +89,16 @@ public class OrganizationController extends AbstractController {
     protected boolean delete(HttpServletRequest req){
 
         return organizationDao.delete(new Organization(), UUID.fromString(req.getParameter("id")));
+    }
+
+    @Override
+    public void checkInputParams(BaseEntity entity) throws EmptyFieldException {
+        Organization organization = (Organization) entity;
+
+        if ( (organization != null) && (organization.getName().isEmpty()) ||
+                (organization.getPhysicalAddress().isEmpty()) || (organization.getLegalAddress().isEmpty())
+                || (organization.getManager() == null) ) {
+            throw new EmptyFieldException("Empty fields in required fields");
+        }
     }
 }
