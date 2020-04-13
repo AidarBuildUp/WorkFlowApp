@@ -64,4 +64,15 @@ public class Employee extends BaseEntity {
     public void setFunction(String function) {
         this.function = function;
     }
+
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "id=" + id +
+                ", firstName='" + firstName + '\'' +
+                ", secondName='" + secondName + '\'' +
+                ", patronymicName='" + patronymicName + '\'' +
+                ", function='" + function + '\'' +
+                '}';
+    }
 }

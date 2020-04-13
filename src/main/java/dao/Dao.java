@@ -10,15 +10,15 @@ import java.util.UUID;
 
 @Local
 public interface Dao {
-        List<BaseEntity> getAll(Class clazz);
+        List<BaseEntity> getAll(BaseEntity entity);
 
-        BaseEntity getById(Class clazz, UUID id) throws NoSuchEntityException;
+        BaseEntity getById(BaseEntity entity, UUID id) throws NoSuchEntityException;
 
-        UUID put(Class clazz, BaseEntity entity) throws NoSuchEntityException;
+        UUID put(BaseEntity entity) throws NoSuchEntityException;
 
-        void update(Class clazz, BaseEntity entity);
+        void update(BaseEntity entity);
 
-        boolean delete(Class clazz, UUID id);
+        boolean delete(BaseEntity entity, UUID id);
 
          void checkInputParams (BaseEntity entity) throws EmptyFieldException;
 }

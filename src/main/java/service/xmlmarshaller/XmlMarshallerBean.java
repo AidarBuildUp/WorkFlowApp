@@ -1,6 +1,5 @@
 package service.xmlmarshaller;
 
-import domain.Employee;
 import org.apache.log4j.Logger;
 
 import javax.ejb.EJB;
@@ -16,9 +15,9 @@ import java.io.IOException;
 import java.util.List;
 
 @Stateless
-public class XmlMarshallerBean <T> implements XmlMarshaller {
+public class XmlMarshallerBean implements XmlMarshaller {
 
-    @EJB
+    @EJB (beanName = "Wrapper")
     Wrapper xmlWrapper;
 
     private static final Logger logger = Logger.getLogger(XmlMarshallerBean.class);
@@ -38,6 +37,8 @@ public class XmlMarshallerBean <T> implements XmlMarshaller {
 
     @Override
     public void sendMarshalledResponse(HttpServletResponse resp, List list, Class clazz) throws JAXBException, IOException {
+        logger.info("start");
+
         JAXBContext jc = JAXBContext.newInstance(Wrapper.class, clazz);
 
         Marshaller m = jc.createMarshaller();
@@ -48,10 +49,12 @@ public class XmlMarshallerBean <T> implements XmlMarshaller {
         JAXBElement<Wrapper> wrapperJAXBElement = new JAXBElement<Wrapper>(new QName(clazz.getSimpleName().toLowerCase()+"s"), Wrapper.class, xmlWrapper);
 
         m.marshal(wrapperJAXBElement, resp.getOutputStream());
+
+        logger.info("success");
     }
 
     @Override
-    public Object doUnmarshall(HttpServletRequest request, Object entity) throws JAXBException, IOException {
+    public Object getMarshalledRequest(HttpServletRequest request, Object entity) throws JAXBException, IOException {
         JAXBContext context = JAXBContext.newInstance(entity.getClass());
 
         return context.createUnmarshaller()

@@ -3,14 +3,11 @@ package dao;
 import dao.sql.SqlRequestType;
 import dao.sql.SqlRequestUtil;
 import dao.util.DbConnector;
-import dao.util.DbConnectorBean;
 import domain.BaseEntity;
 import exception.database.NoSuchEntityException;
 import org.apache.log4j.Logger;
 
 import javax.ejb.EJB;
-import javax.ejb.Local;
-import javax.ejb.Stateless;
 import java.sql.*;
 import java.util.*;
 
@@ -20,6 +17,8 @@ public abstract class DaoBean implements Dao {
 
     protected final String [] TABLE_COLUMN_NAMES = {"id"};
 
+    protected final UUID UUID_NULL = UUID.fromString("00000000-0000-0000-0000-000000000000");
+
     @EJB (beanName = "DbConnectorBean")
     DbConnector dbConnector;
 
@@ -27,7 +26,7 @@ public abstract class DaoBean implements Dao {
     SqlRequestUtil sqlRequestUtil;
 
     @Override
-    public List<BaseEntity> getAll(Class clazz){
+    public List<BaseEntity> getAll(BaseEntity entity){
         logger.info("start");
 
         List<BaseEntity> entityList = new ArrayList<>();
@@ -35,14 +34,13 @@ public abstract class DaoBean implements Dao {
         try (Connection connection = dbConnector.getConnection();
              Statement statement = connection.createStatement()){
 
-            ResultSet resultSet = statement.executeQuery(sqlRequestUtil.getSqlRequest(clazz, SqlRequestType.GET_ALL_QUERY));
-            resultSet.next();
+            ResultSet resultSet = statement.executeQuery(sqlRequestUtil.getSqlRequest(entity.getClass(), SqlRequestType.GET_ALL_QUERY));
 
             while (resultSet.next()) {
-                BaseEntity entity = new BaseEntity();
-                entity.setId( UUID.fromString(resultSet.getString(TABLE_COLUMN_NAMES[0])) );
-                setEntityFieldsExceptId(entity, resultSet);
-                entityList.add(entity);
+
+                BaseEntity baseEntity = setEntityFields(UUID.fromString(resultSet.getString(TABLE_COLUMN_NAMES[0])) , resultSet);
+
+                entityList.add(baseEntity);
             }
 
             logger.info("success");
@@ -57,12 +55,11 @@ public abstract class DaoBean implements Dao {
     }
 
     @Override
-    public BaseEntity getById(Class clazz, UUID id) throws NoSuchEntityException {
+    public BaseEntity getById(BaseEntity entity, UUID id) throws NoSuchEntityException {
         logger.info("start");
-        BaseEntity entity = new BaseEntity();
 
         try (Connection connection = dbConnector.getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(sqlRequestUtil.getSqlRequest(clazz, SqlRequestType.GET_BY_ID))){
+            PreparedStatement preparedStatement = connection.prepareStatement(sqlRequestUtil.getSqlRequest(entity.getClass(), SqlRequestType.GET_BY_ID))){
 
             preparedStatement.setObject(1, id, Types.OTHER);
             preparedStatement.execute();
@@ -70,8 +67,7 @@ public abstract class DaoBean implements Dao {
 
             if (!resultSet.next()) throw new NoSuchEntityException("No entity by id = " + id);
 
-            entity.setId(id);
-            setEntityFieldsExceptId(entity, resultSet);
+            entity = setEntityFields(id, resultSet);
 
             logger.info("success");
             return entity;
@@ -85,16 +81,16 @@ public abstract class DaoBean implements Dao {
     }
 
     @Override
-    public UUID put(Class clazz, BaseEntity entity) {
+    public UUID put(BaseEntity entity) {
         logger.info("start");
 
         UUID id = UUID.randomUUID();
 
         try (Connection connection = dbConnector.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sqlRequestUtil.getSqlRequest(clazz, SqlRequestType.PUT_QUERY))){
+             PreparedStatement preparedStatement = connection.prepareStatement(sqlRequestUtil.getSqlRequest(entity.getClass(), SqlRequestType.PUT_QUERY))){
 
             preparedStatement.setObject(1, id, Types.OTHER);
-            fillPrepareStatementExceptId(entity, preparedStatement);
+            fillPrepareStatementPut(entity, preparedStatement);
 
             preparedStatement.execute();
 
@@ -104,7 +100,7 @@ public abstract class DaoBean implements Dao {
         }
 
         try {
-            getById(clazz, id);
+            getById(entity, id);
 
         } catch (NoSuchEntityException e) {
             logger.error("Unknown error. Entity is not saved", e);
@@ -117,28 +113,36 @@ public abstract class DaoBean implements Dao {
 
 
     @Override
-    public void update(Class clazz, BaseEntity entity) {
+    public void update(BaseEntity entity) {
         logger.info("start");
 
         try (Connection connection = dbConnector.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sqlRequestUtil.getSqlRequest(clazz, SqlRequestType.POST_QUERY))){
+             PreparedStatement preparedStatement = connection.prepareStatement(sqlRequestUtil.getSqlRequest(entity.getClass(), SqlRequestType.POST_QUERY))){
 
-            fillPrepareStatementExceptId(entity, preparedStatement);
-            preparedStatement.setObject(6, entity.getId(), Types.OTHER);
+            fillPrepareStatementUpdate(entity, preparedStatement);
 
             preparedStatement.execute();
 
         } catch (SQLException e) {
             logger.error("error during saving employee entity", e);
         }
+
+        try {
+            getById(entity, entity.getId());
+
+        } catch (NoSuchEntityException e) {
+            logger.error("Unknown error. Entity is not saved", e);
+
+
+        }
     }
 
     @Override
-    public boolean delete(Class clazz, UUID id) {
+    public boolean delete(BaseEntity entity, UUID id) {
         logger.info("start");
 
         try (Connection connection = dbConnector.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sqlRequestUtil.getSqlRequest(clazz, SqlRequestType.DELETE_QUERY))){
+             PreparedStatement preparedStatement = connection.prepareStatement(sqlRequestUtil.getSqlRequest(entity.getClass(), SqlRequestType.DELETE_QUERY))){
 
             preparedStatement.setObject(1, id, Types.OTHER);
             preparedStatement.execute();
@@ -151,9 +155,11 @@ public abstract class DaoBean implements Dao {
         }
     }
 
-    protected abstract BaseEntity setEntityFieldsExceptId(BaseEntity entity, ResultSet resultSet) throws SQLException;
+    protected abstract BaseEntity setEntityFields(UUID id, ResultSet resultSet) throws SQLException;
 
-    protected abstract void fillPrepareStatementExceptId(BaseEntity entity, PreparedStatement preparedStatement) throws SQLException;
+    protected abstract void fillPrepareStatementPut(BaseEntity entity, PreparedStatement preparedStatement) throws SQLException;
+
+    protected abstract void fillPrepareStatementUpdate(BaseEntity entity, PreparedStatement preparedStatement) throws SQLException;
 
 
 }

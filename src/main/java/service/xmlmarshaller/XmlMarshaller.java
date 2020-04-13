@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.util.List;
 
 public interface XmlMarshaller <T> {
-    void sendMarshalledResponse(HttpServletResponse resp, Object entity) throws JAXBException, IOException, ResponseMarshallingException;
+    void sendMarshalledResponse(HttpServletResponse resp, T entity) throws JAXBException, IOException, ResponseMarshallingException;
 
     void sendMarshalledResponse(HttpServletResponse resp, List<T> list, Class clazz) throws JAXBException, IOException, ResponseMarshallingException;
 
-    Object doUnmarshall(HttpServletRequest request, Object entity) throws JAXBException, IOException;
+    T getMarshalledRequest(HttpServletRequest request, T entity) throws JAXBException, IOException;
 }

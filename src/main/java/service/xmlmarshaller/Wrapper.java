@@ -5,10 +5,10 @@ import javax.xml.bind.annotation.XmlAnyElement;
 import java.util.LinkedList;
 import java.util.List;
 
-@Stateless
-public class Wrapper<T> {
+@Stateless (name = "Wrapper")
+public class Wrapper <T> {
 
-    private List<T> items = new LinkedList<T>();
+    private List<T> items = new LinkedList<>();
 
     @XmlAnyElement(lax=true)
     public List<T> getItems() {
@@ -16,6 +16,8 @@ public class Wrapper<T> {
     }
 
     public void setItems(List<T> items) {
+
         this.items = items;
+
     }
 }

@@ -3,6 +3,7 @@ package dao;
 import domain.BaseEntity;
 import domain.Employee;
 import domain.Organization;
+import exception.database.NoManagerForOrganization;
 import exception.database.NoSuchEntityException;
 import exception.validator.EmptyFieldException;
 
@@ -19,19 +20,21 @@ public class OrganizationDaoBean extends DaoBean implements Dao {
     private final String [] TABLE_COLUMN_NAMES = {"id", "name", "physicaladdress", "legaladdress", "manager_id"};
 
     @Override
-    protected BaseEntity setEntityFieldsExceptId(BaseEntity entity, ResultSet resultSet) throws SQLException {
-        Organization organization = (Organization) entity;
-
+    protected BaseEntity setEntityFields(UUID id, ResultSet resultSet) throws SQLException {
         logger.info("started >>");
+        Organization organization = new Organization();
 
+        organization.setId(id);
         organization.setName(resultSet.getString(TABLE_COLUMN_NAMES[1]));
         organization.setPhysicalAddress(resultSet.getString(TABLE_COLUMN_NAMES[2]));
         organization.setLegalAddress(resultSet.getString(TABLE_COLUMN_NAMES[3]));
 
-        if (resultSet.getString(TABLE_COLUMN_NAMES[4]) != null) {
+        UUID manager_id = UUID.fromString(resultSet.getString(TABLE_COLUMN_NAMES[4]));
+
+        if ( manager_id != UUID_NULL) {
 
             try {
-                Employee manager = (Employee) getById( new Employee().getClass(),UUID.fromString(resultSet.getString(TABLE_COLUMN_NAMES[4])) );
+                Employee manager = (Employee) getById( new Employee(),manager_id );
 
                 organization.setManager(manager);
 
@@ -47,7 +50,8 @@ public class OrganizationDaoBean extends DaoBean implements Dao {
     }
 
     @Override
-    protected void fillPrepareStatementExceptId(BaseEntity entity, PreparedStatement preparedStatement) throws SQLException {
+    protected void fillPrepareStatementPut(BaseEntity entity, PreparedStatement preparedStatement) throws SQLException {
+        logger.info("started >>");
         Organization organization = (Organization) entity;
 
         preparedStatement.setString(2, organization.getName());
@@ -56,10 +60,28 @@ public class OrganizationDaoBean extends DaoBean implements Dao {
 
         if (organization.getManager() != null) {
             preparedStatement.setObject(5, organization.getManager().getId(), Types.OTHER);
-
-        } else {
-            preparedStatement.setString(5, null); //manager deleted or was empty
         }
+
+        checkManagerId(organization.getManager().getId());
+
+        logger.info("<< successed");
+    }
+
+    @Override
+    protected void fillPrepareStatementUpdate(BaseEntity entity, PreparedStatement preparedStatement) throws SQLException {
+        Organization organization = (Organization) entity;
+
+        preparedStatement.setString(1, organization.getName());
+        preparedStatement.setString(2, organization.getPhysicalAddress());
+        preparedStatement.setString(3, organization.getLegalAddress());
+
+        if (organization.getManager() != null) {
+            preparedStatement.setObject(4, organization.getManager().getId(), Types.OTHER);
+        }
+
+        checkManagerId(organization.getManager().getId());
+
+        preparedStatement.setObject(5, organization.getId(), Types.OTHER);
     }
 
     @Override
@@ -67,8 +89,20 @@ public class OrganizationDaoBean extends DaoBean implements Dao {
         Organization organization = (Organization) entity;
 
             if ( (organization != null) && (organization.getName().isEmpty()) ||
-                    (organization.getPhysicalAddress().isEmpty()) || (organization.getLegalAddress().isEmpty()) ) {
+                    (organization.getPhysicalAddress().isEmpty()) || (organization.getLegalAddress().isEmpty())
+                    || (organization.getManager() == null) ) {
                 throw new EmptyFieldException("Empty fields in required fields");
             }
+    }
+
+    private void checkManagerId (UUID managerId) throws NoManagerForOrganization {
+        try {
+            getById(new Employee(), managerId);
+
+        } catch (NoSuchEntityException e) {
+            logger.error("No manager id in employee table");
+
+            throw new NoManagerForOrganization();
+        }
     }
 }
